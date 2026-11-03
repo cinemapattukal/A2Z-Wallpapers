@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A2Z Wallpapers</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #10111b;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  padding: 20px;
+  text-align: center;
+  background: #191a2b;
+}
+
+header h1 {
+  color: #8b7cff;
+  margin: 0;
+}
+
+header p {
+  color: #bbb;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+
+.card {
+  background: #1c1d2e;
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+}
+
+#preview {
+  width: 100%;
+  max-height: 450px;
+  object-fit: contain;
+  border-radius: 10px;
+  display: none;
+  margin: 15px 0;
+}
+
+select, button, input {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+}
+
+button {
+  background: #7867ff;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #6553e8;
+}
+
+footer {
+  text-align: center;
+  padding: 25px;
+  color: #aaa;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1> A2Z Wallpapers </h1>
+  <p>Beautiful Wallpapers • 4K • HD</p>
+</header>
+
+<div class="container">
+  <div class="card">
+
+    <h2>Wallpaper Download</h2>
+    <p>Choose a wallpaper and download your favorite resolution.</p>
+
+    <input type="file" id="file" accept="image/jpeg,image/png,image/webp">
+
+    <img id="preview" alt="Wallpaper Preview">
+
+    <select id="resolution">
+      <option value="3840,2160">4K - 3840 × 2160</option>
+      <option value="2560,1440">2K - 2560 × 1440</option>
+      <option value="1920,1080">Full HD - 1920 × 1080</option>
+      <option value="1280,720">HD - 1280 × 720</option>
+    </select>
+
+    <button id="download">Download Wallpaper</button>
+
+  </div>
+</div>
+
+<footer>
+  © 2026 A2Z Wallpapers
+</footer>
+
+<script>
+let image = new Image();
+let originalName = "wallpaper";
+
+document.getElementById("file").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+
+  if (!file) return;
+
+  originalName = file.name.replace(/\.[^/.]+$/, "");
+
+  const url = URL.createObjectURL(file);
+
+  image.onload = function() {
+    document.getElementById("preview").src = url;
+    document.getElementById("preview").style.display = "block";
+  };
+
+  image.src = url;
+});
+
+document.getElementById("download").addEventListener("click", function() {
+  if (!image.src) {
+    alert("Please select a wallpaper first!");
+    return;
+  }
+
+  const size = document.getElementById("resolution").value.split(",");
+
+  const width = Number(size[0]);
+  const height = Number(size[1]);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+
+  const scale = Math.max(
+    width / image.width,
+    height / image.height
+  );
+
+  const cropWidth = width / scale;
+  const cropHeight = height / scale;
+
+  const x = (image.width - cropWidth) / 2;
+  const y = (image.height - cropHeight) / 2;
+
+  ctx.drawImage(
+    image,
+    x, y, cropWidth, cropHeight,
+    0, 0, width, height
+  );
+
+  canvas.toBlob(function(blob) {
+    if (!blob) {
+      alert("Image processing failed.");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = originalName + "-" + width + "x" + height + ".jpg";
+    link.click();
+
+    URL.revokeObjectURL(link.href);
+  }, "image/jpeg", 0.95);
+});
+</script>
+
+</body>
+</html>
