@@ -4,7 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A2Z Wallpapers</title>
+
+<title>A2Z Wallpapers - Mobile Wallpapers</title>
 
 <style>
 * {
@@ -19,8 +20,8 @@ body {
 }
 
 header {
-  padding: 20px;
   text-align: center;
+  padding: 25px 10px;
   background: #191a2b;
 }
 
@@ -30,55 +31,73 @@ header h1 {
 }
 
 header p {
-  color: #bbb;
+  color: #aaa;
 }
 
 .container {
-  max-width: 900px;
+  max-width: 1200px;
   margin: auto;
-  padding: 20px;
+  padding: 15px;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .card {
   background: #1c1d2e;
-  padding: 20px;
-  border-radius: 15px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.card img {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+}
+
+.card h3 {
+  font-size: 13px;
+  padding: 0 8px;
   text-align: center;
 }
 
-#preview {
-  width: 100%;
-  max-height: 450px;
-  object-fit: contain;
-  border-radius: 10px;
-  display: none;
-  margin: 15px 0;
-}
-
-select, button, input {
-  width: 100%;
-  padding: 14px;
-  margin-top: 12px;
-  border-radius: 8px;
+.card select,
+.card button {
+  width: calc(100% - 16px);
+  margin: 5px 8px;
+  padding: 9px 3px;
   border: none;
-  font-size: 16px;
+  border-radius: 6px;
+  font-size: 12px;
 }
 
-button {
+.card button {
   background: #7867ff;
   color: white;
   font-weight: bold;
   cursor: pointer;
 }
 
-button:hover {
-  background: #6553e8;
-}
-
 footer {
   text-align: center;
-  padding: 25px;
+  padding: 30px;
   color: #aaa;
+}
+
+@media (min-width: 700px) {
+  .gallery {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .card h3 {
+    font-size: 16px;
+  }
 }
 </style>
 </head>
@@ -86,30 +105,12 @@ footer {
 <body>
 
 <header>
-  <h1> A2Z Wallpapers </h1>
-  <p>Beautiful Wallpapers • 4K • HD</p>
+  <h1>A2Z Wallpapers</h1>
+  <p>4K • 2K • Full HD • Mobile Wallpapers</p>
 </header>
 
 <div class="container">
-  <div class="card">
-
-    <h2>Wallpaper Download</h2>
-    <p>Choose a wallpaper and download your favorite resolution.</p>
-
-    <input type="file" id="file" accept="image/jpeg,image/png,image/webp">
-
-    <img id="preview" alt="Wallpaper Preview">
-
-    <select id="resolution">
-      <option value="3840,2160">4K - 3840 × 2160</option>
-      <option value="2560,1440">2K - 2560 × 1440</option>
-      <option value="1920,1080">Full HD - 1920 × 1080</option>
-      <option value="1280,720">HD - 1280 × 720</option>
-    </select>
-
-    <button id="download">Download Wallpaper</button>
-
-  </div>
+  <div class="gallery" id="gallery"></div>
 </div>
 
 <footer>
@@ -117,74 +118,126 @@ footer {
 </footer>
 
 <script>
-let image = new Image();
-let originalName = "wallpaper";
+const wallpapers = [
+  {
+    name: "Beautiful Nature",
+    image: "wallpapers/Tamannaah Bhatia.png"
+  },
+  {
+    name: "AMOLED Wallpaper",
+    image: "wallpapers/amoled.jpg"
+  },
+  {
+    name: "Flowers Wallpaper",
+    image: "wallpapers/flowers.jpg"
+  }
+];
 
-document.getElementById("file").addEventListener("change", function(e) {
-  const file = e.target.files[0];
+const resolutions = [
+  { name: "4K Mobile", width: 2160, height: 3840 },
+  { name: "2K Mobile", width: 1440, height: 2560 },
+  { name: "Full HD+", width: 1080, height: 2400 },
+  { name: "Full HD", width: 1080, height: 1920 },
+  { name: "HD", width: 720, height: 1280 }
+];
 
-  if (!file) return;
+const gallery = document.getElementById("gallery");
 
-  originalName = file.name.replace(/\.[^/.]+$/, "");
+wallpapers.forEach((wallpaper, index) => {
 
-  const url = URL.createObjectURL(file);
+  const card = document.createElement("div");
+  card.className = "card";
 
-  image.onload = function() {
-    document.getElementById("preview").src = url;
-    document.getElementById("preview").style.display = "block";
+  const img = document.createElement("img");
+  img.src = wallpaper.image;
+  img.alt = wallpaper.name;
+  img.loading = "lazy";
+
+  const title = document.createElement("h3");
+  title.textContent = wallpaper.name;
+
+  const select = document.createElement("select");
+
+  resolutions.forEach((r, i) => {
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent =
+      `${r.name} (${r.width} × ${r.height})`;
+    select.appendChild(option);
+  });
+
+  const button = document.createElement("button");
+  button.textContent = "Download";
+
+  button.onclick = () => {
+    downloadWallpaper(wallpaper, select.value);
   };
 
-  image.src = url;
+  card.append(img, title, select, button);
+  gallery.appendChild(card);
+
 });
 
-document.getElementById("download").addEventListener("click", function() {
-  if (!image.src) {
-    alert("Please select a wallpaper first!");
-    return;
-  }
+function downloadWallpaper(wallpaper, resolutionIndex) {
 
-  const size = document.getElementById("resolution").value.split(",");
+  const image = new Image();
+  image.crossOrigin = "anonymous";
 
-  const width = Number(size[0]);
-  const height = Number(size[1]);
+  image.onload = () => {
 
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
+    const r = resolutions[resolutionIndex];
 
-  const ctx = canvas.getContext("2d");
+    const canvas = document.createElement("canvas");
+    canvas.width = r.width;
+    canvas.height = r.height;
 
-  const scale = Math.max(
-    width / image.width,
-    height / image.height
-  );
+    const ctx = canvas.getContext("2d");
 
-  const cropWidth = width / scale;
-  const cropHeight = height / scale;
+    const scale = Math.max(
+      r.width / image.width,
+      r.height / image.height
+    );
 
-  const x = (image.width - cropWidth) / 2;
-  const y = (image.height - cropHeight) / 2;
+    const cropWidth = r.width / scale;
+    const cropHeight = r.height / scale;
 
-  ctx.drawImage(
-    image,
-    x, y, cropWidth, cropHeight,
-    0, 0, width, height
-  );
+    const x = (image.width - cropWidth) / 2;
+    const y = (image.height - cropHeight) / 2;
 
-  canvas.toBlob(function(blob) {
-    if (!blob) {
-      alert("Image processing failed.");
-      return;
-    }
+    ctx.drawImage(
+      image,
+      x, y, cropWidth, cropHeight,
+      0, 0, r.width, r.height
+    );
 
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = originalName + "-" + width + "x" + height + ".jpg";
-    link.click();
+    canvas.toBlob(blob => {
 
-    URL.revokeObjectURL(link.href);
-  }, "image/jpeg", 0.95);
-});
+      if (!blob) {
+        alert("Wallpaper processing failed");
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download =
+        wallpaper.name.replace(/\s+/g, "-") +
+        "-" + r.width + "x" + r.height + ".jpg";
+
+      link.click();
+
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    }, "image/jpeg", 0.95);
+  };
+
+  image.onerror = () => {
+    alert("Wallpaper load failed. Check the image path.");
+  };
+
+  image.src = wallpaper.image;
+}
 </script>
 
 </body>
