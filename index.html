@@ -206,38 +206,12 @@ const wallpapers = [
 // =====================================
 
 const resolutions = [
-
-  {
-    name: "4K Original",
-    width: 2160,
-    height: 3840,
-    original: true
-  },
-
-  {
-    name: "2K Mobile",
-    width: 1440,
-    height: 2560
-  },
-
-  {
-    name: "Full HD+",
-    width: 1080,
-    height: 2400
-  },
-
-  {
-    name: "Full HD",
-    width: 1080,
-    height: 1920
-  },
-
-  {
-    name: "HD",
-    width: 720,
-    height: 1280
-  }
-
+  { name: "Download Original", original: true },
+  { name: "Download 4K (2160 × 3840)", width: 2160, height: 3840, quality: 0.82 },
+  { name: "Download 2K (1440 × 2560)", width: 1440, height: 2560, quality: 0.85 },
+  { name: "Download Full HD+ (1080 × 2400)", width: 1080, height: 2400, quality: 0.88 },
+  { name: "Download Full HD (1080 × 1920)", width: 1080, height: 1920, quality: 0.88 },
+  { name: "Download HD (720 × 1280)", width: 720, height: 1280, quality: 0.88 }
 ];
 
 // =====================================
@@ -279,8 +253,7 @@ function createGallery(list) {
 
       option.value = index;
 
-      option.textContent =
-        `${r.name} (${r.width} × ${r.height})`;
+      option.textContent = r.name;
 
       select.appendChild(option);
 
@@ -321,146 +294,109 @@ async function downloadWallpaper(wallpaper, resolutionIndex) {
   const resolution = resolutions[resolutionIndex];
 
   try {
+    const response = await fetch(wallpaper.image);
+    if (!response.ok) throw new Error("Wallpaper not found");
 
-    // 4K ORIGINAL DOWNLOAD
-    // Original JPG-ൽ മാറ്റങ്ങൾ വരുത്തില്ല
+    const originalBlob = await response.blob();
 
+    // ORIGINAL: download the source file unchanged, without resizing/compression.
     if (resolution.original) {
-
-      const response = await fetch(wallpaper.image);
-
-      if (!response.ok) {
-        throw new Error("Wallpaper not found");
-      }
-
-      const blob = await response.blob();
-
-      const url = URL.createObjectURL(blob);
-
+      const url = URL.createObjectURL(originalBlob);
       const link = document.createElement("a");
+      const extension = getOriginalExtension(wallpaper.image, originalBlob.type);
 
       link.href = url;
-
       link.download =
-        wallpaper.name.replace(/\s+/g, "-") +
-        "-Original.jpg";
+        wallpaper.name.replace(/[^a-z0-9-]+/gi, "-") +
+        "-Original." + extension;
 
       document.body.appendChild(link);
-
       link.click();
-
       link.remove();
 
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 3000);
-
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
       return;
-
     }
 
-    // OTHER RESOLUTIONS
-
+    // Resize and compress the selected version.
+    const imageUrl = URL.createObjectURL(originalBlob);
     const image = new Image();
 
-    image.crossOrigin = "anonymous";
-
-    image.src = wallpaper.image;
-
     await new Promise((resolve, reject) => {
-
       image.onload = resolve;
-
       image.onerror = reject;
-
+      image.src = imageUrl;
     });
 
     const width = resolution.width;
-
     const height = resolution.height;
-
     const canvas = document.createElement("canvas");
 
     canvas.width = width;
-
     canvas.height = height;
 
     const ctx = canvas.getContext("2d");
 
-    // Portrait Wallpaper Crop
+    // Center crop to the selected mobile portrait ratio.
+    const targetRatio = width / height;
+    const sourceRatio = image.naturalWidth / image.naturalHeight;
 
-    const scale = Math.max(
-      width / image.width,
-      height / image.height
-    );
+    let sx = 0, sy = 0;
+    let sw = image.naturalWidth;
+    let sh = image.naturalHeight;
 
-    const cropWidth = width / scale;
+    if (sourceRatio > targetRatio) {
+      sw = image.naturalHeight * targetRatio;
+      sx = (image.naturalWidth - sw) / 2;
+    } else {
+      sh = image.naturalWidth / targetRatio;
+      sy = (image.naturalHeight - sh) / 2;
+    }
 
-    const cropHeight = height / scale;
-
-    const x = (image.width - cropWidth) / 2;
-
-    const y = (image.height - cropHeight) / 2;
-
-    ctx.drawImage(
-      image,
-      x,
-      y,
-      cropWidth,
-      cropHeight,
-      0,
-      0,
-      width,
-      height
-    );
+    ctx.drawImage(image, sx, sy, sw, sh, 0, 0, width, height);
+    URL.revokeObjectURL(imageUrl);
 
     canvas.toBlob((blob) => {
-
       if (!blob) {
-
         alert("Wallpaper processing failed.");
-
         return;
-
       }
 
       const url = URL.createObjectURL(blob);
-
       const link = document.createElement("a");
 
       link.href = url;
-
       link.download =
-        wallpaper.name.replace(/\s+/g, "-") +
+        wallpaper.name.replace(/[^a-z0-9-]+/gi, "-") +
         "-" + width + "x" + height + ".jpg";
 
       document.body.appendChild(link);
-
       link.click();
-
       link.remove();
 
-      setTimeout(() => {
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
 
-        URL.revokeObjectURL(url);
-
-      }, 3000);
-
-    }, "image/jpeg", 0.95);
+    }, "image/jpeg", resolution.quality || 0.85);
 
   } catch (error) {
-
     console.error(error);
-
-    alert(
-      "Wallpaper download failed. Please check the image file."
-    );
-
+    alert("Wallpaper download failed. Please check the image file.");
   }
-
 }
 
-// =====================================
+// Preserve original file extension when downloading the source.
+function getOriginalExtension(imagePath, mimeType) {
+  const path = imagePath.split("?")[0].toLowerCase();
+  const match = path.match(/\.([a-z0-9]+)$/);
+
+  if (match) return match[1];
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/webp") return "webp";
+  if (mimeType === "image/gif") return "gif";
+
+  return "jpg";
+}
+
 // SEARCH WALLPAPERS
 // =====================================
 
