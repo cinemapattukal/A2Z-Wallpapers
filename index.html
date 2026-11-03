@@ -356,32 +356,75 @@ async function downloadWallpaper(wallpaper, resolutionIndex) {
     ctx.drawImage(image, sx, sy, sw, sh, 0, 0, width, height);
     URL.revokeObjectURL(imageUrl);
 
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        alert("Wallpaper processing failed.");
-        return;
-      }
+    // 4K: target approximately 2 MB by adjusting JPEG quality.
+    // Other resolutions use their preset quality.
+    let outputBlob;
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
+    if (width === 2160 && height === 3840) {
+      outputBlob = await makeJpegNearTarget(canvas, 2 * 1024 * 1024);
+    } else {
+      outputBlob = await canvasToBlob(canvas, "image/jpeg", resolution.quality || 0.85);
+    }
 
-      link.href = url;
-      link.download =
-        wallpaper.name.replace(/[^a-z0-9-]+/gi, "-") +
-        "-" + width + "x" + height + ".jpg";
+    if (!outputBlob) {
+      alert("Wallpaper processing failed.");
+      return;
+    }
 
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+    const url = URL.createObjectURL(outputBlob);
+    const link = document.createElement("a");
 
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    link.href = url;
+    link.download =
+      wallpaper.name.replace(/[^a-z0-9-]+/gi, "-") +
+      "-" + width + "x" + height + ".jpg";
 
-    }, "image/jpeg", resolution.quality || 0.85);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
 
   } catch (error) {
     console.error(error);
     alert("Wallpaper download failed. Please check the image file.");
   }
+}
+
+
+// Convert canvas to JPEG and aim for a target file size.
+// Browser JPEG compression is approximate; the final size can vary by image.
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+}
+
+async function makeJpegNearTarget(canvas, targetBytes) {
+  let low = 0.30;
+  let high = 0.92;
+  let bestBlob = await canvasToBlob(canvas, "image/jpeg", high);
+
+  // If already near/below target at high quality, keep the higher quality.
+  if (bestBlob && bestBlob.size <= targetBytes) return bestBlob;
+
+  // Find the highest JPEG quality that is at or below ~2 MB.
+  for (let i = 0; i < 7; i++) {
+    const quality = (low + high) / 2;
+    const blob = await canvasToBlob(canvas, "image/jpeg", quality);
+    if (!blob) continue;
+
+    if (blob.size <= targetBytes) {
+      bestBlob = blob;
+      low = quality;  // try a little higher quality while staying near target
+    } else {
+      high = quality; // too large: reduce quality
+    }
+  }
+
+  // If the image is extremely detailed and even low quality exceeds target,
+  // return the smallest tested version rather than failing the download.
+  const lowestQualityBlob = await canvasToBlob(canvas, "image/jpeg", 0.30);
+  if (lowestQualityBlob && lowestQualityBlob.size <= targetBytes) return bestBlob || lowestQualityBlob;
+  return lowestQualityBlob || bestBlob;
 }
 
 // Preserve original file extension when downloading the source.
