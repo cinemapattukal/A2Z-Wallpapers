@@ -5,7 +5,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>A2Z Wallpapers - Mobile Wallpapers</title>
+<title>A2Z Wallpapers - 4K Mobile Wallpapers</title>
+
+<meta name="description" content="Download beautiful 4K, 2K and HD mobile wallpapers from A2Z Wallpapers.">
 
 <style>
 * {
@@ -15,23 +17,25 @@
 body {
   margin: 0;
   background: #10111b;
-  color: white;
+  color: #ffffff;
   font-family: Arial, sans-serif;
 }
 
 header {
-  text-align: center;
-  padding: 25px 10px;
   background: #191a2b;
+  padding: 25px 15px;
+  text-align: center;
 }
 
 header h1 {
   color: #8b7cff;
   margin: 0;
+  font-size: 28px;
 }
 
 header p {
-  color: #aaa;
+  color: #bbbbbb;
+  margin-bottom: 0;
 }
 
 .container {
@@ -40,16 +44,28 @@ header p {
   padding: 15px;
 }
 
+.search-box {
+  width: 100%;
+  padding: 13px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  border: 1px solid #333449;
+  background: #1c1d2e;
+  color: white;
+  font-size: 16px;
+}
+
 .gallery {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .card {
   background: #1c1d2e;
   border-radius: 12px;
   overflow: hidden;
+  min-width: 0;
 }
 
 .card img {
@@ -62,18 +78,26 @@ header p {
 
 .card h3 {
   font-size: 13px;
-  padding: 0 8px;
   text-align: center;
+  padding: 0 5px;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
 }
 
 .card select,
 .card button {
-  width: calc(100% - 16px);
-  margin: 5px 8px;
-  padding: 9px 3px;
+  display: block;
+  width: calc(100% - 12px);
+  margin: 6px;
+  padding: 9px 2px;
   border: none;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 7px;
+  font-size: 11px;
+}
+
+.card select {
+  background: #303146;
+  color: white;
 }
 
 .card button {
@@ -83,20 +107,35 @@ header p {
   cursor: pointer;
 }
 
+.card button:hover {
+  background: #6553e8;
+}
+
+#message {
+  text-align: center;
+  color: #aaa;
+  padding: 20px;
+}
+
 footer {
   text-align: center;
   padding: 30px;
-  color: #aaa;
+  color: #aaaaaa;
 }
 
 @media (min-width: 700px) {
   .gallery {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px;
   }
 
   .card h3 {
     font-size: 16px;
+  }
+
+  .card select,
+  .card button {
+    font-size: 14px;
+    padding: 12px;
   }
 }
 </style>
@@ -106,11 +145,22 @@ footer {
 
 <header>
   <h1>A2Z Wallpapers</h1>
-  <p>4K • 2K • Full HD • Mobile Wallpapers</p>
+  <p>Beautiful Mobile Wallpapers | 4K | 2K | HD</p>
 </header>
 
 <div class="container">
+
+  <input
+    type="search"
+    id="search"
+    class="search-box"
+    placeholder="Search wallpapers..."
+  >
+
   <div class="gallery" id="gallery"></div>
+
+  <p id="message"></p>
+
 </div>
 
 <footer>
@@ -118,127 +168,316 @@ footer {
 </footer>
 
 <script>
+
+// =====================================
+// WALLPAPER LIST
+// GitHub-ൽ Upload ചെയ്യുന്ന ചിത്രങ്ങളുടെ
+// പേരുകൾ ഇവിടെ ചേർക്കുക.
+// =====================================
+
 const wallpapers = [
+
   {
     name: "Tamannaah Bhatia",
     image: "wallpapers/Tamannaah Bhatia.png"
   },
+
   {
     name: "AMOLED Wallpaper",
     image: "wallpapers/amoled.jpg"
   },
+
   {
-    name: "Flowers Wallpaper",
+    name: "Beautiful Flowers",
     image: "wallpapers/flowers.jpg"
   }
+
 ];
 
+// =====================================
+// DOWNLOAD RESOLUTIONS
+// =====================================
+
 const resolutions = [
-  { name: "8K Mobile", width: 1955, height: 3840 },
-  { name: "4K Mobile", width: 2160, height: 3840 },
-  { name: "2K Mobile", width: 1440, height: 2560 },
-  { name: "Full HD+", width: 1080, height: 2400 },
-  { name: "Full HD", width: 1080, height: 1920 },
-  { name: "HD", width: 720, height: 1280 }
+
+  {
+    name: "4K Original",
+    width: 2160,
+    height: 3840,
+    original: true
+  },
+
+  {
+    name: "2K Mobile",
+    width: 1440,
+    height: 2560
+  },
+
+  {
+    name: "Full HD+",
+    width: 1080,
+    height: 2400
+  },
+
+  {
+    name: "Full HD",
+    width: 1080,
+    height: 1920
+  },
+
+  {
+    name: "HD",
+    width: 720,
+    height: 1280
+  }
+
 ];
+
+// =====================================
+// CREATE WALLPAPER GALLERY
+// =====================================
 
 const gallery = document.getElementById("gallery");
 
-wallpapers.forEach((wallpaper, index) => {
+function createGallery(list) {
 
-  const card = document.createElement("div");
-  card.className = "card";
+  gallery.innerHTML = "";
 
-  const img = document.createElement("img");
-  img.src = wallpaper.image;
-  img.alt = wallpaper.name;
-  img.loading = "lazy";
+  document.getElementById("message").textContent =
+    list.length ? "" : "No wallpapers found.";
 
-  const title = document.createElement("h3");
-  title.textContent = wallpaper.name;
+  list.forEach((wallpaper) => {
 
-  const select = document.createElement("select");
+    const card = document.createElement("div");
+    card.className = "card";
 
-  resolutions.forEach((r, i) => {
-    const option = document.createElement("option");
-    option.value = i;
-    option.textContent =
-      `${r.name} (${r.width} × ${r.height})`;
-    select.appendChild(option);
+    const img = document.createElement("img");
+
+    img.src = wallpaper.image;
+    img.alt = wallpaper.name;
+    img.loading = "lazy";
+
+    img.onerror = () => {
+      img.alt = "Wallpaper not found";
+    };
+
+    const title = document.createElement("h3");
+    title.textContent = wallpaper.name;
+
+    const select = document.createElement("select");
+
+    resolutions.forEach((r, index) => {
+
+      const option = document.createElement("option");
+
+      option.value = index;
+
+      option.textContent =
+        `${r.name} (${r.width} × ${r.height})`;
+
+      select.appendChild(option);
+
+    });
+
+    const button = document.createElement("button");
+
+    button.textContent = "Download";
+
+    button.onclick = () => {
+
+      downloadWallpaper(
+        wallpaper,
+        Number(select.value)
+      );
+
+    };
+
+    card.append(
+      img,
+      title,
+      select,
+      button
+    );
+
+    gallery.appendChild(card);
+
   });
 
-  const button = document.createElement("button");
-  button.textContent = "Download";
+}
 
-  button.onclick = () => {
-    downloadWallpaper(wallpaper, select.value);
-  };
+// =====================================
+// DOWNLOAD WALLPAPER
+// =====================================
 
-  card.append(img, title, select, button);
-  gallery.appendChild(card);
+async function downloadWallpaper(wallpaper, resolutionIndex) {
 
-});
+  const resolution = resolutions[resolutionIndex];
 
-function downloadWallpaper(wallpaper, resolutionIndex) {
+  try {
 
-  const image = new Image();
-  image.crossOrigin = "anonymous";
+    // 4K ORIGINAL DOWNLOAD
+    // Original JPG-ൽ മാറ്റങ്ങൾ വരുത്തില്ല
 
-  image.onload = () => {
+    if (resolution.original) {
 
-    const r = resolutions[resolutionIndex];
+      const response = await fetch(wallpaper.image);
+
+      if (!response.ok) {
+        throw new Error("Wallpaper not found");
+      }
+
+      const blob = await response.blob();
+
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = url;
+
+      link.download =
+        wallpaper.name.replace(/\s+/g, "-") +
+        "-Original.jpg";
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 3000);
+
+      return;
+
+    }
+
+    // OTHER RESOLUTIONS
+
+    const image = new Image();
+
+    image.crossOrigin = "anonymous";
+
+    image.src = wallpaper.image;
+
+    await new Promise((resolve, reject) => {
+
+      image.onload = resolve;
+
+      image.onerror = reject;
+
+    });
+
+    const width = resolution.width;
+
+    const height = resolution.height;
 
     const canvas = document.createElement("canvas");
-    canvas.width = r.width;
-    canvas.height = r.height;
+
+    canvas.width = width;
+
+    canvas.height = height;
 
     const ctx = canvas.getContext("2d");
 
+    // Portrait Wallpaper Crop
+
     const scale = Math.max(
-      r.width / image.width,
-      r.height / image.height
+      width / image.width,
+      height / image.height
     );
 
-    const cropWidth = r.width / scale;
-    const cropHeight = r.height / scale;
+    const cropWidth = width / scale;
+
+    const cropHeight = height / scale;
 
     const x = (image.width - cropWidth) / 2;
+
     const y = (image.height - cropHeight) / 2;
 
     ctx.drawImage(
       image,
-      x, y, cropWidth, cropHeight,
-      0, 0, r.width, r.height
+      x,
+      y,
+      cropWidth,
+      cropHeight,
+      0,
+      0,
+      width,
+      height
     );
 
-    canvas.toBlob(blob => {
+    canvas.toBlob((blob) => {
 
       if (!blob) {
-        alert("Wallpaper processing failed");
+
+        alert("Wallpaper processing failed.");
+
         return;
+
       }
 
       const url = URL.createObjectURL(blob);
+
       const link = document.createElement("a");
 
       link.href = url;
+
       link.download =
         wallpaper.name.replace(/\s+/g, "-") +
-        "-" + r.width + "x" + r.height + ".jpg";
+        "-" + width + "x" + height + ".jpg";
+
+      document.body.appendChild(link);
 
       link.click();
 
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      link.remove();
+
+      setTimeout(() => {
+
+        URL.revokeObjectURL(url);
+
+      }, 3000);
 
     }, "image/jpeg", 0.95);
-  };
 
-  image.onerror = () => {
-    alert("Wallpaper load failed. Check the image path.");
-  };
+  } catch (error) {
 
-  image.src = wallpaper.image;
+    console.error(error);
+
+    alert(
+      "Wallpaper download failed. Please check the image file."
+    );
+
+  }
+
 }
+
+// =====================================
+// SEARCH WALLPAPERS
+// =====================================
+
+document.getElementById("search").addEventListener(
+  "input",
+  function() {
+
+    const searchText = this.value.toLowerCase();
+
+    const filtered = wallpapers.filter(w =>
+      w.name.toLowerCase().includes(searchText)
+    );
+
+    createGallery(filtered);
+
+  }
+);
+
+// =====================================
+// START WEBSITE
+// =====================================
+
+createGallery(wallpapers);
+
 </script>
 
 </body>
