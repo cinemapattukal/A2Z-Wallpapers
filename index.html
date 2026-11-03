@@ -356,12 +356,12 @@ async function downloadWallpaper(wallpaper, resolutionIndex) {
     ctx.drawImage(image, sx, sy, sw, sh, 0, 0, width, height);
     URL.revokeObjectURL(imageUrl);
 
-    // 4K: target approximately 2 MB by adjusting JPEG quality.
+    // 4K: target approximately 3 MB by adjusting JPEG quality.
     // Other resolutions use their preset quality.
     let outputBlob;
 
     if (width === 2160 && height === 3840) {
-      outputBlob = await makeJpegNearTarget(canvas, 2 * 1024 * 1024);
+      outputBlob = await makeJpegNearTarget(canvas, 3 * 1024 * 1024);
     } else {
       outputBlob = await canvasToBlob(canvas, "image/jpeg", resolution.quality || 0.85);
     }
@@ -406,7 +406,7 @@ async function makeJpegNearTarget(canvas, targetBytes) {
   // If already near/below target at high quality, keep the higher quality.
   if (bestBlob && bestBlob.size <= targetBytes) return bestBlob;
 
-  // Find the highest JPEG quality that is at or below ~2 MB.
+  // Find the highest JPEG quality that is at or below ~3 MB.
   for (let i = 0; i < 7; i++) {
     const quality = (low + high) / 2;
     const blob = await canvasToBlob(canvas, "image/jpeg", quality);
